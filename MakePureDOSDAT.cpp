@@ -448,8 +448,8 @@ void ListCHDTracks(std::vector<Bit8u>& line, const Bit8u* chd_data, size_t chd_s
 			for (Bit8u *p = track_data, *pEnd = p + track_size, tmp; p != pEnd; p += 2)
 				{ tmp = p[0]; p[0] = p[1]; p[1] = tmp; }
 			// Additional info for audio tracks
-			for (in_zeros = 0; in_zeros != track_size && track_data[in_zeros] == 0; in_zeros++) {}
-			for (out_zeros = 0; out_zeros != track_size && track_data[track_size - 1 - out_zeros] == 0; out_zeros++) {}
+			for (; in_zeros != track_size && track_data[in_zeros] == 0; in_zeros++) {}
+			if (in_zeros != track_size) for (; out_zeros != track_size && track_data[track_size - 1 - out_zeros] == 0; out_zeros++) {}
 			datacrc32 = CRC32(track_data + in_zeros, (size_t)(track_size - in_zeros - out_zeros));
 		}
 		Bit32u trackcrc32 = CRC32(track_data, (size_t)track_size);
