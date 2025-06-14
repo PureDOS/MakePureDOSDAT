@@ -454,7 +454,7 @@ void ListCHDTracks(std::vector<Bit8u>& line, const Bit8u* chd_data, size_t chd_s
 			if (!hunk_pos) { memset(track_out, 0, data_size); }
 			else { memcpy(track_out, chd_data + hunk_pos + hunk_ofs, data_size); }
 		}
-		Bit32u in_zeros = 0, out_zeros = 0, datacrc32 = 0;
+		Bit32u in_zeros = 0, out_zeros = 0;
 		if (isAudio)
 		{
 			// CHD audio endian swap
@@ -463,21 +463,20 @@ void ListCHDTracks(std::vector<Bit8u>& line, const Bit8u* chd_data, size_t chd_s
 			// Additional info for audio tracks
 			for (; in_zeros != track_size && track_data[in_zeros] == 0; in_zeros++) {}
 			if (in_zeros != track_size) for (; out_zeros != track_size && track_data[track_size - 1 - out_zeros] == 0; out_zeros++) {}
-			datacrc32 = CRC32(track_data + in_zeros, (size_t)(track_size - in_zeros - out_zeros));
 		}
 		Bit32u trackcrc32 = CRC32(track_data, (size_t)track_size);
 		Bit8u trackmd5[16], tracksha1[20];
 		FastMD5(track_data, (size_t)track_size, trackmd5);
 		SHA1(track_data, (size_t)track_size, tracksha1);
 
-		XMLAppendRawF(line, 200, "			<track number=\"%d\" type=\"%s\" frames=\"%d\" %spregap=\"%d\" duration=\"%02d:%02d:%02d\" size=\"%u\"",
-			mt_track_no, mt_type, mt_frames, ((mt_pregap && mt_pgtype[0] != 'V') ? "omitted_" : ""), mt_pregap, (mt_frames/75/60), (mt_frames/75)%60, mt_frames%75, (Bit32u)track_size);
+		XMLAppendRawF(line, 128, "			<track number=\"%d\" type=\"%s\" frames=\"%d\"", mt_track_no, mt_type, mt_frames);
+		if (mt_pregap) XMLAppendRawF(line, 40, " %spregap=\"%d\"", (mt_pgtype[0] != 'V' ? "omitted_" : ""), mt_pregap);
+		XMLAppendRawF(line, 64, " duration=\"%02d:%02d:%02d\" size=\"%u\"", (mt_frames/75/60), (mt_frames/75)%60, mt_frames%75, (Bit32u)track_size);
 		XMLAppendRawF(line, 21, " crc=\"%08x\" md5=\"", trackcrc32);
 		for (int md5i = 0; md5i != 16; md5i++) XMLAppendRawF(line, 2, "%02x", trackmd5[md5i]);
 		XMLAppendRaw(line, 8, "\" sha1=\"");
 		for (int sha1i = 0; sha1i != 20; sha1i++) XMLAppendRawF(line, 2, "%02x", tracksha1[sha1i]);
-		if (isAudio)
-			XMLAppendRawF(line, 72, "\" in_zeros=\"%u\" out_zeros=\"%u\" trimmed_crc=\"%08x", in_zeros, out_zeros, datacrc32);
+		if (isAudio) XMLAppendRawF(line, 72, "\" in_zeros=\"%u\" out_zeros=\"%u", in_zeros, out_zeros);
 		XMLAppendRaw(line, 4, "\"/>\n");
 		free(track_data);
 	}
@@ -716,9 +715,9 @@ int main(int argc, char *argv[])
 					*p = '/'; // convert back-slashes to regular slashes
 
 			bool is_dir = (name[filename_len - 1] == '/' || (external_attr & 0x10));
-			if (is_dir && (file_date >> 9) >= 44)
+			if (is_dir && (file_date >> 9) >= 45)
 			{
-				// Fix time stamp of directory records from 2024 and newer to 1999-12-31 (and skip them when outputting records of non-empty directories below)
+				// Fix time stamp of directory records from 2025 and newer to 1999-12-31 (and skip them when outputting records of non-empty directories below)
 				file_date = ((19 << 9) | (12 << 5) | 31);
 				file_time = 0;
 			}
@@ -727,9 +726,9 @@ int main(int argc, char *argv[])
 				// Don't output the TrrntZip default time stamp (1996-12-24 23:32:00)
 				file_date = file_time = 0;
 			}
-			else if ((file_date >> 9) >= 44)
+			else if ((file_date >> 9) >= 45)
 			{
-				// Don't output file time stamps from 2024 and newer
+				// Don't output file time stamps from 2025 and newer
 				file_date = file_time = 0;
 			}
 
